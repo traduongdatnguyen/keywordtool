@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SEO Keyword Tool Pro</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        
+        /* Animations */
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .animate-fade-in { animation: fadeIn 0.5s ease-out forwards; }
+        
+        /* Typing dot animation */
+        @keyframes bounce-delay {
+            0%, 80%, 100% { transform: translateY(0); }
+            40% { transform: translateY(-4px); }
+        }
+        .typing-dot { animation: bounce-delay 1.4s infinite ease-in-out both; }
+        .typing-dot:nth-child(1) { animation-delay: -0.32s; }
+        .typing-dot:nth-child(2) { animation-delay: -0.16s; }
+    </style>
+</head>
+<body class="bg-slate-50 font-sans text-slate-800 min-h-screen flex flex-col">
+
+    <header class="bg-white border-b border-slate-200 sticky top-0 z-50 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div class="flex items-center gap-2 shrink-0">
+                    <div class="bg-blue-600 p-2 rounded-lg">
+                        <i data-lucide="sparkles" class="w-6 h-6 text-white"></i>
+                    </div>
+                    <h1 class="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600">
+                        SEO Keyword Tool
+                    </h1>
+                </div>
+                
+                <form id="searchForm" class="flex-1 w-full max-w-4xl flex flex-col md:flex-row gap-2 relative">
+                    <!-- Location Box -->
+                    <div class="relative w-full md:w-64 shrink-0" id="locationWrapper">
+                        <i data-lucide="map-pin" class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 pointer-events-none"></i>
+                        <input type="text" id="locationInput" value="Toàn quốc" placeholder="Nhập tỉnh/thành phố..." autocomplete="off"
+                            class="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 shadow-sm transition-all outline-none bg-slate-50 text-sm font-medium text-slate-700">
+                        
+                        <!-- Dropdown List -->
+                        <div id="locationDropdown" class="hidden absolute top-[calc(100%+8px)] left-0 w-full max-h-60 overflow-y-auto bg-white border border-slate-200 rounded-xl shadow-lg z-50">
+                            <ul id="locationList" class="py-1"></ul>
+                        </div>
+                    </div>
+
+                    <!-- Keyword Box -->
+                    <div class="relative flex-1">
+                        <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 pointer-events-none"></i>
+                        <input type="text" id="keywordInput" placeholder="Nhập từ khóa (VD: cách giảm cân...)" autocomplete="off"
+                            class="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 shadow-sm transition-all outline-none">
+                    </div>
+                    <button type="submit" id="searchBtn" class="bg-blue-600 hover:bg-blue-700 text-white px-4 sm:px-6 py-3 rounded-xl font-medium flex items-center justify-center gap-2 transition-colors shrink-0">
+                        <span id="btnText" class="hidden sm:inline">Phân tích</span>
+                        <i data-lucide="search" id="btnIcon" class="w-5 h-5 sm:hidden"></i>
+                        <i data-lucide="loader-2" id="btnLoading" class="w-5 h-5 animate-spin hidden"></i>
+                    </button>
+                </form>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-1 w-full flex flex-col gap-8">
+        
+        <!-- Empty State -->
+        <div id="emptyState" class="flex flex-col items-center justify-center py-20 text-center px-4">
+            <div class="bg-blue-50 w-24 h-24 rounded-full flex items-center justify-center mb-6">
+                <i data-lucide="search" class="w-10 h-10 text-blue-500"></i>
+            </div>
+            <h2 class="text-2xl font-bold text-slate-800 mb-2">Bắt đầu nghiên cứu từ khóa</h2>
+            <p class="text-slate-500 max-w-md">Nhập một từ khóa bất kỳ vào ô tìm kiếm phía trên để phân tích lưu lượng, xu hướng, CPC và sử dụng AI để lên dàn ý bài viết.</p>
+        </div>
+
+        <!-- Loading State -->
+        <div id="loadingState" class="hidden flex-col items-center justify-center py-20">
+            <i data-lucide="loader-2" class="w-10 h-10 text-blue-500 animate-spin mb-4"></i>
+            <p class="text-slate-500">Đang thu thập và phân tích dữ liệu từ khóa...</p>
+        </div>
+
+        <!-- Results Container (Hidden by default) -->
+        <div id="resultsContainer" class="hidden flex-col gap-8">
+            
+            <!-- Aggregates & Chart -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-fade-in">
+                <!-- Cards -->
+                <div class="lg:col-span-1 grid grid-cols-2 gap-4">
+                    <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-center">
+                        <div class="flex items-center gap-2 text-slate-500 mb-2">
+                            <i data-lucide="hash" class="w-4 h-4"></i>
+                            <span class="text-sm font-medium">Tổng từ khóa</span>
+                        </div>
+                        <div id="statTotalKw" class="text-3xl font-bold text-slate-900">0</div>
+                    </div>
+                    <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-center">
+                        <div class="flex items-center gap-2 text-slate-500 mb-2">
+                            <i data-lucide="bar-chart-2" class="w-4 h-4"></i>
+                            <span class="text-sm font-medium">Tổng Volume</span>
+                        </div>
+                        <div id="statTotalVol" class="text-3xl font-bold text-slate-900">0</div>
+                    </div>
+                    <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-center">
+                        <div class="flex items-center gap-2 text-slate-500 mb-2">
+                            <i data-lucide="dollar-sign" class="w-4 h-4"></i>
+                            <span class="text-sm font-medium">CPC TB</span>
+                        </div>
+                        <div id="statAvgCpc" class="text-3xl font-bold text-slate-900">$0</div>
+                    </div>
+                    <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-center">
+                        <div class="flex items-center gap-2 text-slate-500 mb-2">
+                            <i data-lucide="trending-up" class="w-4 h-4"></i>
+                            <span class="text-sm font-medium">Cạnh tranh</span>
+                        </div>
+                        <div class="text-3xl font-bold text-slate-900 flex items-baseline gap-1">
+                            <span id="statAvgComp">0</span><span class="text-lg text-slate-400 font-normal">/100</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Trend Chart -->
+                <div class="lg:col-span-2 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+                    <h3 class="text-base font-semibold mb-4 flex items-center gap-2">
+                        <i data-lucide="trending-up" class="w-5 h-5 text-blue-500"></i>
+                        Xu hướng tìm kiếm trung bình (12 Tháng)
+                    </h3>
+                    <div class="h-48 w-full relative">
+                        <canvas id="trendChartCanvas"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Table & Chat AI -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-fade-in" style="animation-delay: 0.1s;">
+                <!-- Table -->
+                <div class="lg:col-span-2 bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col h-[600px]">
+                    <div class="px-6 py-4 border-b border-slate-200 bg-slate-50/50">
+                        <h3 class="font-semibold text-slate-800">Ý tưởng từ khóa (Danh sách chi tiết)</h3>
+                    </div>
+                    <div class="overflow-auto flex-1">
+                        <table class="w-full text-left text-sm whitespace-nowrap">
+                            <thead class="bg-white sticky top-0 z-10 outline outline-1 outline-slate-200">
+                                <tr class="text-slate-500">
+                                    <th class="px-6 py-4 font-medium">Từ khóa</th>
+                                    <th class="px-6 py-4 font-medium text-right">Volume</th>
+                                    <th class="px-6 py-4 font-medium text-center">Trend (12T)</th>
+                                    <th class="px-6 py-4 font-medium text-right">CPC</th>
+                                    <th class="px-6 py-4 font-medium text-right">Cạnh tranh</th>
+                                </tr>
+                            </thead>
+                            <tbody id="keywordTableBody" class="divide-y divide-slate-100">
+                                <!-- Data will be injected here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Chat AI -->
+                <div class="lg:col-span-1 bg-white rounded-2xl border border-slate-200 shadow-sm flex flex-col h-[600px] overflow-hidden">
+                    <div class="px-6 py-4 border-b border-slate-200 bg-gradient-to-r from-blue-50 to-indigo-50 flex items-center gap-3">
+                        <div class="bg-white p-1.5 rounded-lg shadow-sm text-blue-600">
+                            <i data-lucide="bot" class="w-5 h-5"></i>
+                        </div>
+                        <div>
+                            <h3 class="font-semibold text-slate-800">Trợ lý AI Content</h3>
+                            <p class="text-xs text-slate-500">Tạo outline & viết bài chuẩn SEO</p>
+                        </div>
+                    </div>
+                    
+                    <div id="chatMessages" class="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-50/30">
+                        <!-- Chat messages injected here -->
+                    </div>
+                    
+                    <!-- Chat Loading Indicator -->
+                    <div id="chatLoading" class="hidden px-4 pb-4">
+                        <div class="flex gap-3">
+                            <div class="w-8 h-8 rounded-full bg-white border border-slate-200 text-blue-600 flex items-center justify-center shrink-0">
+                                <i data-lucide="bot" class="w-4 h-4"></i>
+                            </div>
+                            <div class="px-4 py-3 rounded-2xl bg-white border border-slate-200 text-slate-500 rounded-tl-sm shadow-sm flex gap-1 items-center h-10">
+                                <div class="w-1.5 h-1.5 bg-slate-400 rounded-full typing-dot"></div>
+                                <div class="w-1.5 h-1.5 bg-slate-400 rounded-full typing-dot"></div>
+                                <div class="w-1.5 h-1.5 bg-slate-400 rounded-full typing-dot"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="p-4 bg-white border-t border-slate-200">
+                        <form id="chatForm" class="relative">
+                            <input type="text" id="chatInput" placeholder="VD: Viết cho tôi dàn ý bài viết..." autocomplete="off"
+                                class="w-full pl-4 pr-12 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-slate-50 transition-all outline-none text-sm">
+                            <button type="submit" id="chatSendBtn" class="absolute right-2 top-1/2 -translate-y-1/2 p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50">
+                                <i data-lucide="send" class="w-4 h-4"></i>
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // API KEY CONFIGURATION
+        const API_KEY = "AQ.Ab8RN6IfDyza3mqldnDxTHY3_5IDjoZ8-fjGl6afKjiPrvF7GA"; // Environment will auto-inject this during preview
+        const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${API_KEY}`;
+
+        // CONSTANTS
+        const VIETNAM_PROVINCES = [
+            "Toàn quốc", "Hà Nội", "Hồ Chí Minh", "Đà Nẵng", "Hải Phòng", "Cần Thơ", 
+            "An Giang", "Bà Rịa - Vũng Tàu", "Bắc Giang", "Bắc Kạn", "Bạc Liêu", "Bắc Ninh", 
+            "Bến Tre", "Bình Định", "Bình Dương", "Bình Phước", "Bình Thuận", "Cà Mau", 
+            "Cao Bằng", "Đắk Lắk", "Đắk Nông", "Điện Biên", "Đồng Nai", "Đồng Tháp", 
+            "Gia Lai", "Hà Giang", "Hà Nam", "Hà Tĩnh", "Hải Dương", "Hậu Giang", "Hòa Bình", 
+            "Hưng Yên", "Khánh Hòa", "Kiên Giang", "Kon Tum", "Lai Châu", "Lâm Đồng", 
+            "Lạng Sơn", "Lào Cai", "Long An", "Nam Định", "Nghệ An", "Ninh Bình", "Ninh Thuận", 
+            "Phú Thọ", "Phú Yên", "Quảng Bình", "Quảng Nam", "Quảng Ngãi", "Quảng Ninh", 
+            "Quảng Trị", "Sóc Trăng", "Sơn La", "Tây Ninh", "Thái Bình", "Thái Nguyên", 
+            "Thanh Hóa", "Thừa Thiên Huế", "Tiền Giang", "Trà Vinh", "Tuyên Quang", "Vĩnh Long", 
+            "Vĩnh Phúc", "Yên Bái"
+        ];
+
+        // GLOBAL STATE
+        let keywordDataList = [];
+        let chatHistory = [];
+        let chartInstance = null;
+        let originalQuery = "";
+
+        // DOM ELEMENTS
+        const locInput = document.getElementById('locationInput');
+        const locDropdown = document.getElementById('locationDropdown');
+        const locList = document.getElementById('locationList');
+        const locWrapper = document.getElementById('locationWrapper');
+        
+        const keywordInput = document.getElementById('keywordInput');
+        const searchForm = document.getElementById('searchForm');
+        const searchBtn = document.getElementById('searchBtn');
+        const btnText = document.getElementById('btnText');
+        const btnIcon = document.getElementById('btnIcon');
+        const btnLoading = document.getElementById('btnLoading');
+
+        const emptyState = document.getElementById('emptyState');
+        const loadingState = document.getElementById('loadingState');
+        const resultsContainer = document.getElementById('resultsContainer');
+
+        const chatMessages = document.getElementById('chatMessages');
+        const chatForm = document.getElementById('chatForm');
+        const chatInput = document.getElementById('chatInput');
+        const chatLoading = document.getElementById('chatLoading');
+        const chatSendBtn = document.getElementById('chatSendBtn');
+
+        
+        // --- LOCATION DROPDOWN LOGIC ---
+        function renderLocationList(filterText) {
+            locList.innerHTML = '';
+            const filtered = VIETNAM_PROVINCES.filter(p => p.toLowerCase().includes(filterText.toLowerCase()));
+            
+            if (filtered.length === 0) {
+                const li = document.createElement('li');
+                li.className = 'px-4 py-3 text-sm text-blue-600 hover:bg-blue-50 cursor-pointer flex items-center justify-between';
+                li.innerHTML = `<span>Sử dụng: "${filterText}"</span> <i data-lucide="check" class="w-4 h-4"></i>`;
+                li.onclick = () => { locDropdown.classList.add('hidden'); };
+                locList.appendChild(li);
+            } else {
+                filtered.forEach(prov => {
+                    const li = document.createElement('li');
+                    li.className = 'px-4 py-2.5 text-sm cursor-pointer hover:bg-blue-50 flex items-center justify-between text-slate-700 transition-colors';
+                    li.innerText = prov;
+                    li.onclick = () => {
+                        locInput.value = prov;
+                        locDropdown.classList.add('hidden');
+                    };
+                    locList.appendChild(li);
+                });
+            }
+            lucide.createIcons();
+        }
+
+        locInput.addEventListener('focus', () => {
+            renderLocationList(locInput.value);
+            locDropdown.classList.remove('hidden');
+        });
+
+        locInput.addEventListener('input', (e) => {
+            renderLocationList(e.target.value);
+            locDropdown.classList.remove('hidden');
+        });
+
+        document.addEventListener('mousedown', (e) => {
+            if (!locWrapper.contains(e.target)) {
+                locDropdown.classList.add('hidden');
+            }
+        });
+
+
+        searchForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const query = keywordInput.value.trim();
+            if (!query) return;
+
+            originalQuery = query;
+            const locationVal = locInput.value.trim() || 'Toàn quốc';
+            const targetLocation = locationVal === 'Toàn quốc' ? 'Việt Nam' : `${locationVal}, Việt Nam`;
+
+            // UI changes
+            searchBtn.disabled = true;
+            btnText.classList.add('hidden');
+            btnIcon.classList.add('hidden');
+            btnLoading.classList.remove('hidden');
+            emptyState.classList.add('hidden');
+            resultsContainer.classList.add('hidden');
+            loadingState.classList.remove('hidden');
+            locDropdown.classList.add('hidden');
+
+            const prompt = `Bạn là một chuyên gia SEO và công cụ phân tích từ khóa Google Ads. Hãy tìm 15 từ khóa liên quan chặt chẽ đến từ khóa gốc: "${query}", tập trung nhắm mục tiêu vào khu vực/thị trường: "${targetLocation}". 
+Lưu ý: Ngôn ngữ của từ khóa trả về, lượng volume, trend, cpc và độ cạnh tranh phải mô phỏng cho khu vực "${targetLocation}".
+Trả về dữ liệu dưới dạng mảng JSON gồm các đối tượng có cấu trúc sau:
+- "keyword": (string) Tên từ khóa.
+- "volume": (integer) Lượng tìm kiếm hàng tháng (từ 100 đến 100000).
+- "trend": (array of 12 integers) Mảng 12 số nguyên thể hiện xu hướng tìm kiếm trong 12 tháng qua.
+- "cpc": (number) Giá thầu CPC trung bình bằng USD (từ 0.1 đến 5.0).
+- "competition": (integer) Độ cạnh tranh từ 0 đến 100.`;
+
+            const payload = {
+                contents: [{ parts: [{ text: prompt }] }],
+                generationConfig: {
+                    responseMimeType: "application/json",
+                    responseSchema: {
+                        type: "ARRAY",
+                        items: {
+                            type: "OBJECT",
+                            properties: {
+                                "keyword": { type: "STRING" },
+                                "volume": { type: "INTEGER" },
+                                "trend": { type: "ARRAY", items: { type: "INTEGER" } },
+                                "cpc": { type: "NUMBER" },
+                                "competition": { type: "INTEGER" }
+                            },
+                            propertyOrdering: ["keyword", "volume", "trend", "cpc", "competition"]
+                        }
+                    }
+                }
+            };
+
+            try {
+                const res = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const result = await res.json();
+                
+                if (result.candidates && result.candidates[0].content.parts[0].text) {
+                    keywordDataList = JSON.parse(result.candidates[0].content.parts[0].text);
+                    processAndRenderData(keywordDataList);
+                    
+                    // Reset Chat
+                    chatHistory = [];
+                    appendChatMessage('model', `Tôi đã phân tích xong từ khóa "${query}" tại thị trường ${targetLocation}. Bạn có muốn tôi viết một dàn ý bài viết chuẩn SEO dựa trên các từ khóa này không?`);
+                    
+                    loadingState.classList.add('hidden');
+                    resultsContainer.classList.remove('hidden');
+                    resultsContainer.style.display = 'flex';
+                }
+            } catch (err) {
+                console.error("Lỗi tìm kiếm:", err);
+                alert("Có lỗi xảy ra khi lấy dữ liệu. Vui lòng thử lại sau.");
+                loadingState.classList.add('hidden');
+                emptyState.classList.remove('hidden');
+            } finally {
+                searchBtn.disabled = false;
+                btnText.classList.remove('hidden');
+                btnIcon.classList.remove('hidden');
+                btnLoading.classList.add('hidden');
+            }
+        });
+
+
+        function processAndRenderData(data) {
+            // Aggregate Stats
+            const totalKeywords = data.length;
+            const totalVolume = data.reduce((sum, item) => sum + (item.volume || 0), 0);
+            const avgCpc = data.reduce((sum, item) => sum + (item.cpc || 0), 0) / totalKeywords;
+            const avgComp = data.reduce((sum, item) => sum + (item.competition || 0), 0) / totalKeywords;
+
+            document.getElementById('statTotalKw').innerText = totalKeywords;
+            document.getElementById('statTotalVol').innerText = totalVolume.toLocaleString();
+            document.getElementById('statAvgCpc').innerText = `$${avgCpc.toFixed(2)}`;
+            document.getElementById('statAvgComp').innerText = Math.round(avgComp);
+
+            // Average Trend for Chart
+            const avgTrendData = Array(12).fill(0);
+            data.forEach(item => {
+                if (item.trend && item.trend.length === 12) {
+                    item.trend.forEach((val, idx) => { avgTrendData[idx] += val; });
+                }
+            });
+            const chartData = avgTrendData.map(v => Math.round(v / totalKeywords));
+            renderChart(chartData);
+            renderTable(data);
+            lucide.createIcons();
+        }
+
+        function renderChart(dataArr) {
+            const ctx = document.getElementById('trendChartCanvas').getContext('2d');
+            if (chartInstance) chartInstance.destroy();
+            
+            const labels = Array.from({length: 12}, (_, i) => `Tháng ${i + 1}`);
+            chartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Lượng tìm kiếm TB',
+                        data: dataArr,
+                        borderColor: '#3b82f6',
+                        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                        borderWidth: 3,
+                        pointBackgroundColor: '#fff',
+                        pointBorderColor: '#3b82f6',
+                        pointBorderWidth: 2,
+                        pointRadius: 4,
+                        pointHoverRadius: 6,
+                        tension: 0.4,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { grid: { display: false }, ticks: { color: '#64748b' } },
+                        y: { border: { display: false }, grid: { color: '#e2e8f0', borderDash: [3, 3] }, ticks: { color: '#64748b' } }
+                    }
+                }
+            });
+        }
+
+
+        function getSparklineSVG(data) {
+            if (!data || data.length === 0) return '';
+            const max = Math.max(...data);
+            const min = Math.min(...data);
+            const range = max - min === 0 ? 1 : max - min;
+            
+            const points = data.map((val, index) => {
+                const x = (index / (data.length - 1)) * 100;
+                const y = 100 - ((val - min) / range) * 100;
+                return `${x},${y}`;
+            }).join(' ');
+
+            return `
+            <svg viewBox="0 -10 100 120" class="w-24 h-8 mx-auto overflow-visible">
+                <polyline fill="none" stroke="#3b82f6" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" points="${points}" />
+            </svg>`;
+        }
+
+        function renderTable(data) {
+            const tbody = document.getElementById('keywordTableBody');
+            tbody.innerHTML = '';
+            
+            data.forEach(item => {
+                const tr = document.createElement('tr');
+                tr.className = 'hover:bg-slate-50/80 transition-colors';
+                
+                let compColor = 'bg-green-500';
+                if (item.competition > 70) compColor = 'bg-red-500';
+                else if (item.competition > 30) compColor = 'bg-yellow-500';
+
+                tr.innerHTML = `
+                    <td class="px-6 py-4 font-medium text-slate-800">${item.keyword}</td>
+                    <td class="px-6 py-4 text-right text-slate-600">${item.volume.toLocaleString()}</td>
+                    <td class="px-6 py-4 text-center">${getSparklineSVG(item.trend)}</td>
+                    <td class="px-6 py-4 text-right text-slate-600">$${item.cpc.toFixed(2)}</td>
+                    <td class="px-6 py-4 text-right">
+                        <div class="flex items-center justify-end gap-2">
+                            <div class="w-16 h-2 bg-slate-100 rounded-full overflow-hidden">
+                                <div class="h-full rounded-full ${compColor}" style="width: ${item.competition}%"></div>
+                            </div>
+                            <span class="text-xs text-slate-500 w-6">${item.competition}</span>
+                        </div>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+
+        function appendChatMessage(role, text) {
+            chatHistory.push({ role, text });
+            
+            const msgDiv = document.createElement('div');
+            msgDiv.className = `flex gap-3 ${role === 'user' ? 'flex-row-reverse' : ''}`;
+            
+            const iconHtml = role === 'user' 
+                ? `<div class="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center shrink-0"><i data-lucide="user" class="w-4 h-4"></i></div>`
+                : `<div class="w-8 h-8 rounded-full bg-white border border-slate-200 text-blue-600 flex items-center justify-center shrink-0"><i data-lucide="bot" class="w-4 h-4"></i></div>`;
+            
+            const bubbleHtml = role === 'user'
+                ? `<div class="px-4 py-3 rounded-2xl max-w-[85%] text-sm leading-relaxed bg-blue-600 text-white rounded-tr-sm">${text}</div>`
+                : `<div class="px-4 py-3 rounded-2xl max-w-[85%] text-sm leading-relaxed bg-white border border-slate-200 text-slate-700 rounded-tl-sm whitespace-pre-wrap shadow-sm">${text}</div>`;
+            
+            msgDiv.innerHTML = iconHtml + bubbleHtml;
+            chatMessages.appendChild(msgDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+            lucide.createIcons();
+        }
+
+        chatForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const userMsg = chatInput.value.trim();
+            if (!userMsg) return;
+
+            // Update UI
+            appendChatMessage('user', userMsg);
+            chatInput.value = '';
+            chatInput.disabled = true;
+            chatSendBtn.disabled = true;
+            chatLoading.classList.remove('hidden');
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+
+            // Prepare Prompt Context
+            const locationVal = locInput.value.trim() || 'Toàn quốc';
+            const targetLoc = locationVal === 'Toàn quốc' ? 'Việt Nam' : `${locationVal}, Việt Nam`;
+            const keywordContext = keywordDataList.length > 0 
+                ? `Danh sách từ khóa (Gốc: ${originalQuery} - Khu vực: ${targetLoc}): \n` + keywordDataList.map(k => `- ${k.keyword} (Volume: ${k.volume})`).join('\n')
+                : "Chưa có danh sách từ khóa.";
+
+            const systemInstruction = "Bạn là một trợ lý SEO Content Copywriter chuyên nghiệp. Nhiệm vụ của bạn là giúp người dùng viết bài chuẩn SEO dựa trên danh sách từ khóa đã phân tích. Hãy viết tự nhiên, trình bày đẹp bằng markdown.";
+            
+            const historyText = chatHistory.map(msg => `${msg.role === 'user' ? 'User' : 'AI'}: ${msg.text}`).join('\n\n');
+            const fullPrompt = `[Ngữ cảnh hệ thống: ${keywordContext}]\n\n[Lịch sử trò chuyện]\n${historyText}\n\nAI:`;
+
+            const payload = {
+                contents: [{ role: 'user', parts: [{ text: fullPrompt }] }],
+                systemInstruction: { parts: [{ text: systemInstruction }] }
+            };
+
+            try {
+                const res = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const result = await res.json();
+                
+                if (result.candidates && result.candidates[0].content.parts[0].text) {
+                    appendChatMessage('model', result.candidates[0].content.parts[0].text);
+                } else {
+                    throw new Error("Empty response");
+                }
+            } catch (err) {
+                console.error("Lỗi Chat:", err);
+                appendChatMessage('model', "Xin lỗi, đã có lỗi kết nối xảy ra. Vui lòng thử lại.");
+            } finally {
+                chatInput.disabled = false;
+                chatSendBtn.disabled = false;
+                chatLoading.classList.add('hidden');
+                chatInput.focus();
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+            }
+        });
+
+        // Initialize icons on first load
+        lucide.createIcons();
+    </script>
+</body>
+</html>
